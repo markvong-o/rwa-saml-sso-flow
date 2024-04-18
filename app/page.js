@@ -1,95 +1,61 @@
+"use client";
 import Image from "next/image";
 import styles from "./page.module.css";
+import { useUser } from "@auth0/nextjs-auth0/client";
+import { Auth0Client } from "@auth0/auth0-spa-js";
 
 export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.js</code>
-        </p>
-        <div>
+  const { user, error, isLoading } = useUser();
+
+  const auth0 = new Auth0Client({
+    domain: "dev-b4nlzp3r.us.auth0.com",
+    clientId: "Ibev1cSnPxSBcGZY2ivBgIWEgesAgLMp",
+    authorizationParams: {
+      redirect_uri: "http://localhost:3000",
+    },
+  });
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>{error.message}</div>;
+
+  const url = new URL(window.location.href);
+  const searchParams = url.searchParams;
+  const code = searchParams.get("code");
+
+  if (code) {
+    // handle the login redirect
+    (async () => {
+      try {
+        let res = await auth0.handleRedirectCallback();
+        console.log(res);
+      } catch (e) {
+        console.log(e);
+      }
+    })();
+  }
+
+  if (user) {
+    (async () => {
+      if (!(await auth0.checkSession())) {
+        await auth0.loginWithPopup({
+          authorizationParams: { prompt: "none" },
+        });
+      }
+    })();
+    return (
+      <div>
+        Welcome {user.name}! <a href="/api/auth/logout">Logout</a>
+        <section>
           <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
+            href="https://dev-b4nlzp3r.us.auth0.com/samlp/5aYhrBvsra0Q4qgID9mCdVR5SfSsz2FB?connection=dev-users"
             target="_blank"
-            rel="noopener noreferrer"
           >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
+            SAML SSO
           </a>
-        </div>
+        </section>
       </div>
+    );
+  }
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+  return <a href="/api/auth/login">Login</a>;
 }
